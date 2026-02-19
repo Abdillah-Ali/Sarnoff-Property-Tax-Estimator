@@ -159,67 +159,82 @@ const Index = () => {
 
             {/* Results */}
             {hasAnalyzed && !isAnalyzing && (
-              <div className="space-y-5">
-                {/* Summary bar */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-semibold font-sans text-foreground">
-                      {results.length} PIN{results.length !== 1 ? "s" : ""}{" "}
-                      analyzed
-                    </span>
-                    <span
-                      className="text-xs font-sans px-2 py-0.5 rounded-full border"
-                      style={{ background: "#f0fdf4", color: "#15803d", borderColor: "#bbf7d0" }}
-                    >
-                      {validResults.length} found
-                    </span>
-                    {notFoundResults.length > 0 && (
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
+                <div className="space-y-5">
+                  {/* Summary bar */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-semibold font-sans text-foreground">
+                        {results.length} PIN{results.length !== 1 ? "s" : ""}{" "}
+                        analyzed
+                      </span>
                       <span
                         className="text-xs font-sans px-2 py-0.5 rounded-full border"
-                        style={{ background: "#fef2f2", color: "#b91c1c", borderColor: "#fecaca" }}
+                        style={{ background: "#f0fdf4", color: "#15803d", borderColor: "#bbf7d0" }}
                       >
-                        {notFoundResults.length} not found
+                        {validResults.length} found
                       </span>
-                    )}
-                  </div>
-                  {validResults.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-sans gap-1.5 h-8 text-xs"
-                        onClick={() => setShowReport(true)}
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        Preview Report
-                      </Button>
+                      {notFoundResults.length > 0 && (
+                        <span
+                          className="text-xs font-sans px-2 py-0.5 rounded-full border"
+                          style={{ background: "#fef2f2", color: "#b91c1c", borderColor: "#fecaca" }}
+                        >
+                          {notFoundResults.length} not found
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Results Cards Grid */}
+                  <div className="grid grid-cols-1 gap-4">
+                    {results.map((r) => (
+                      <ResultsCard
+                        key={r.pin}
+                        result={r}
+                        analyzeCurrentTaxes={analyzeCurrentTaxes}
+                        incomeApproach={incomeApproach}
+                      />
+                    ))}
+                  </div>
                 </div>
 
-                {/* Results Cards Grid */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {results.map((r) => (
-                    <ResultsCard
-                      key={r.pin}
-                      result={r}
+                {/* Right Action Sidebar */}
+                <div className="space-y-5">
+                  {validResults.length > 0 && (
+                    <Card className="card-shadow border-border overflow-hidden">
+                      <CardHeader className="pb-3 border-b border-border bg-muted/30">
+                        <CardTitle className="text-sm font-semibold font-sans flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          Reporting
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Button
+                          onClick={() => setShowReport(true)}
+                          className="w-full font-sans gap-2 h-10"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Preview Full Report
+                        </Button>
+                        <p className="text-[11px] text-muted-foreground font-sans mt-3 text-center leading-relaxed">
+                          Review and print the formal analysis report for all identified properties.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Export Panel */}
+                  {validResults.length > 0 && (
+                    <ExportPanel
+                      results={results}
                       analyzeCurrentTaxes={analyzeCurrentTaxes}
                       incomeApproach={incomeApproach}
+                      assessmentOverride={assessmentOverride}
+                      requestId={SESSION_REQUEST_ID}
+                      createdAt={SESSION_CREATED_AT}
                     />
-                  ))}
+                  )}
                 </div>
-
-                {/* Export Panel */}
-                {validResults.length > 0 && (
-                  <ExportPanel
-                    results={results}
-                    analyzeCurrentTaxes={analyzeCurrentTaxes}
-                    incomeApproach={incomeApproach}
-                    assessmentOverride={assessmentOverride}
-                    requestId={SESSION_REQUEST_ID}
-                    createdAt={SESSION_CREATED_AT}
-                  />
-                )}
               </div>
             )}
           </section>
