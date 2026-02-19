@@ -5,6 +5,7 @@ import AnalysisOptions from "@/components/AnalysisOptions";
 import ResultsCard from "@/components/ResultsCard";
 import ReportPreview from "@/components/ReportPreview";
 import ExportPanel from "@/components/ExportPanel";
+import TaxRateUploader from "@/components/TaxRateUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -30,6 +31,7 @@ const Index = () => {
   const [incomeApproach, setIncomeApproach] = useState(false);
   const [assessmentOverride, setAssessmentOverride] =
     useState<AssessmentSource>("auto");
+  const [externalTaxRates, setExternalTaxRates] = useState<Record<string, number> | null>(null);
 
   // Results state
   const [results, setResults] = useState<TaxCalculationResult[]>([]);
@@ -45,7 +47,7 @@ const Index = () => {
       // Simulate a brief async analysis
       setTimeout(() => {
         const analyzed = pins.map((pin) =>
-          analyzePin(pin, MOCK_PROPERTIES, assessmentOverride)
+          analyzePin(pin, MOCK_PROPERTIES, assessmentOverride, externalTaxRates || undefined)
         );
         setResults(analyzed);
         setHasAnalyzed(true);
@@ -56,7 +58,7 @@ const Index = () => {
         }, 100);
       }, 600);
     },
-    [assessmentOverride]
+    [assessmentOverride, externalTaxRates]
   );
 
   const validResults = results.filter((r) => r.found);
@@ -87,6 +89,9 @@ const Index = () => {
                 />
               </CardContent>
             </Card>
+
+            {/* Tax Rate PDF Uploader */}
+            <TaxRateUploader onDataExtracted={(data) => setExternalTaxRates(data.rates)} />
 
             {/* Analysis Options */}
             <Card className="card-shadow border-border">

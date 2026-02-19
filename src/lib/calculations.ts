@@ -77,7 +77,8 @@ export function calculateEstimatedTax(
 export function analyzePin(
   pin: string,
   properties: Record<string, PropertyRecord>,
-  assessmentOverride: AssessmentSource = "auto"
+  assessmentOverride: AssessmentSource = "auto",
+  externalTaxRates?: Record<string, number>
 ): TaxCalculationResult {
   const property = properties[pin] ?? null;
   const warnings: string[] = [];
@@ -98,13 +99,22 @@ export function analyzePin(
 
   const assessment = selectAssessment(property, assessmentOverride);
 
-  // Requirement 1.3: Tax rate lookup from neighborhood_code
-  const taxRateInfo = getMostRecentTaxRate(property.neighborhood_code);
-  const taxRateYear = taxRateInfo?.year ?? property.tax_rate_year;
-  const taxRateValue = taxRateInfo?.rate ?? property.tax_rate_value;
+  // Requirement 1.3: Tax rate lookup
+  // Priority: 1. External (PDF) -> 2. Central Lookup -> 3. Mock Data
+  let taxRateValue = property.tax_rate_value;
+  let taxRateYear = property.tax_rate_year;
 
-  if (!taxRateInfo) {
-    warnings.push(`No tax rate found for neighborhood ${property.neighborhood_code} in central lookup. Fell back to mock default.`);
+  if (externalTaxRates && externalTaxRates[property.neighborhood_code] !== undefined) {
+    taxRateValue = externalTaxRates[property.neighborhood_code];
+    taxRateYear = new Date().getFullYear(); // Assume recent if from PDF
+  } else {
+    const taxRateInfo = getMostRecentTaxRate(property.neighborhood_code);
+    if (taxRateInfo) {
+      taxRateValue = taxRateInfo.rate;
+      taxRateYear = taxRateInfo.year;
+    } else {
+      warnings.push(`No tax rate found for neighborhood ${property.neighborhood_code} in central lookup. Fell back to mock default.`);
+    }
   }
 
   if (assessment.value === null) {

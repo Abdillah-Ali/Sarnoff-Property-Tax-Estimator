@@ -18,7 +18,7 @@ interface PinInputPanelProps {
 }
 
 function normalizePin(raw: string): string {
-  return raw.replace(/[\s\-]/g, "");
+  return raw.replace(/[\s-]/g, "");
 }
 
 function validatePin(raw: string): ValidatedPin {

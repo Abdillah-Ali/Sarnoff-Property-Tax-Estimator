@@ -1,5 +1,7 @@
 import React, { useRef } from "react";
-import { FileText, Download, X } from "lucide-react";
+import { FileText, Download, X, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,94 +34,35 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({
   const reportRef = useRef<HTMLDivElement>(null);
   const validResults = results.filter((r) => r.found && r.property);
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!reportRef.current) return;
 
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Sarnoff Property Tax Analysis Report</title>
-  <style>
-    body { font-family: Georgia, serif; color: #1a2340; margin: 0; padding: 32px; font-size: 13px; }
-    h1 { font-size: 20px; color: #0f1f40; margin-bottom: 4px; }
-    h2 { font-size: 15px; color: #0f1f40; margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #d1d9e6; padding-bottom: 4px; }
-    .meta { font-family: monospace; font-size: 10px; color: #6b7280; margin-bottom: 24px; }
-    .narrative { background: #f0f4fb; border-left: 3px solid #1a3a6b; padding: 14px 16px; margin: 16px 0; font-style: italic; font-size: 13px; line-height: 1.6; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-family: Arial, sans-serif; font-size: 11px; }
-    th { background: #1a3a6b; color: #fff; padding: 6px 10px; text-align: left; font-weight: 600; }
-    td { padding: 5px 10px; border-bottom: 1px solid #e5e9f0; }
-    tr:nth-child(even) td { background: #f7f9fc; }
-    .highlight { font-weight: 700; font-size: 14px; color: #0f1f40; }
-    .footer { margin-top: 40px; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e9f0; padding-top: 12px; }
-    .section { page-break-inside: avoid; margin-bottom: 28px; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
-    .badge-board { background: #dbeafe; color: #1d4ed8; }
-    .badge-certified { background: #f3e8ff; color: #7e22ce; }
-    .badge-mailed { background: #ffedd5; color: #c2410c; }
-  </style>
-</head>
-<body>
-  <h1>Sarnoff Property Tax Analysis Report</h1>
-  <p class="meta">
-    Request ID: ${requestId} &nbsp;|&nbsp; Generated: ${new Date(createdAt).toLocaleString()} &nbsp;|&nbsp; Cook County, Illinois
-  </p>
+    try {
+      // Create a full-page width container for canvas capture
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
 
-  ${validResults
-        .map(
-          (r) => `
-  <div class="section">
-    <h2>${r.property!.address}</h2>
-    <div class="narrative">
-      The property located at ${r.property!.address} (PINs: ${r.pin}) is located in 
-      ${r.property!.township} township and is currently assessed at 
-      ${formatCurrency(r.assessment.value)}, 
-      which equates to estimated taxes of <strong>${r.estimatedTax !== null ? formatCurrency(r.estimatedTax) : "N/A"}</strong>.
-      ${incomeApproach ? " An income approach analysis has been flagged for this property." : ""}
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>PIN</td><td><code>${r.pin}</code></td></tr>
-        <tr><td>Address</td><td>${r.property!.address}</td></tr>
-        <tr><td>Township</td><td>${r.property!.township}</td></tr>
-        <tr><td>Neighborhood Code</td><td>${r.property!.neighborhood_code}</td></tr>
-        <tr><td>Board Assessment</td><td>${r.property!.board_tot !== null ? formatCurrency(r.property!.board_tot) : "N/A"}</td></tr>
-        <tr><td>Certified Assessment</td><td>${r.property!.certified_tot !== null ? formatCurrency(r.property!.certified_tot) : "N/A"}</td></tr>
-        <tr><td>Mailed Assessment</td><td>${r.property!.mailed_tot !== null ? formatCurrency(r.property!.mailed_tot) : "N/A"}</td></tr>
-        <tr><td>Selected Assessment</td><td><strong>${formatCurrency(r.assessment.value)}</strong> (${r.assessment.type})</td></tr>
-        <tr><td>Tax Rate Year</td><td>${r.property!.tax_rate_year}</td></tr>
-        <tr><td>Tax Rate</td><td>${r.property!.tax_rate_value}%</td></tr>
-        <tr><td>Equalization Factor</td><td>${r.property!.equalization_factor.toFixed(4)}</td></tr>
-        <tr><td>Estimated Annual Taxes</td><td class="highlight">${r.estimatedTax !== null ? formatCurrency(r.estimatedTax) : "N/A"}</td></tr>
-        ${r.warnings.length > 0 ? `<tr><td>Warnings</td><td style="color:#b45309">${r.warnings.join("; ")}</td></tr>` : ""}
-      </tbody>
-    </table>
-  </div>
-  `
-        )
-        .join("")}
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
 
-  <div class="footer">
-    <p><strong>Sarnoff Property Tax</strong> &bull; Since 1986, the law firm of Sarnoff Property Tax has secured substantial real estate tax savings for a wide variety of properties throughout Illinois. "Increasing Income by Reducing Property Tax."</p>
-    <p>Request ID: ${requestId} &nbsp;|&nbsp; Analyze Current Taxes: ${analyzeCurrentTaxes ? "Yes" : "No"} &nbsp;|&nbsp; Income Approach: ${incomeApproach ? "Yes" : "No"}</p>
-  </div>
-</body>
-</html>`;
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `property_tax_report_${Date.now()}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Sarnoff_Property_Tax_Report_${Date.now()}.pdf`);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    }
   };
 
   return (
@@ -139,8 +82,8 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({
               size="sm"
               className="font-sans gap-1.5"
             >
-              <Download className="w-3.5 h-3.5" />
-              Download HTML/PDF
+              <FileDown className="w-3.5 h-3.5" />
+              Download PDF
             </Button>
             <Button
               variant="ghost"
