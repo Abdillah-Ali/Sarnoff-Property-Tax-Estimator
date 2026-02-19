@@ -14,6 +14,7 @@ interface ValidatedPin {
 
 interface PinInputPanelProps {
   onAnalyze: (pins: string[]) => void;
+  onClear?: () => void;
   isAnalyzing: boolean;
 }
 
@@ -47,6 +48,7 @@ function validatePin(raw: string): ValidatedPin {
 
 const PinInputPanel: React.FC<PinInputPanelProps> = ({
   onAnalyze,
+  onClear,
   isAnalyzing,
 }) => {
   const [inputValue, setInputValue] = useState("");
@@ -87,6 +89,7 @@ const PinInputPanel: React.FC<PinInputPanelProps> = ({
     setInputValue("");
     setConfirmedPins([]);
     setParseErrors([]);
+    onClear?.();
   };
 
   const handleAnalyze = () => {

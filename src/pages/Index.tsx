@@ -85,6 +85,10 @@ const Index = () => {
               <CardContent className="pt-4">
                 <PinInputPanel
                   onAnalyze={handleAnalyze}
+                  onClear={() => {
+                    setResults([]);
+                    setHasAnalyzed(false);
+                  }}
                   isAnalyzing={isAnalyzing}
                 />
               </CardContent>
