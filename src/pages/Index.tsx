@@ -21,6 +21,7 @@ import {
   type TaxCalculationResult,
 } from "@/lib/calculations";
 import { MOCK_PROPERTIES } from "@/data/mockData";
+import { cn } from "@/lib/utils";
 
 const SESSION_REQUEST_ID = generateRequestId();
 const SESSION_CREATED_AT = new Date().toISOString();
@@ -35,6 +36,7 @@ const Index = () => {
 
   // Results state
   const [results, setResults] = useState<TaxCalculationResult[]>([]);
+  const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -50,6 +52,15 @@ const Index = () => {
           analyzePin(pin, MOCK_PROPERTIES, assessmentOverride, externalTaxRates || undefined)
         );
         setResults(analyzed);
+
+        // Auto-select first found PIN
+        const firstFound = analyzed.find(r => r.found);
+        if (firstFound) {
+          setSelectedPin(firstFound.pin);
+        } else if (analyzed.length > 0) {
+          setSelectedPin(analyzed[0].pin);
+        }
+
         setHasAnalyzed(true);
         setIsAnalyzing(false);
         // Scroll to results on mobile
@@ -87,6 +98,7 @@ const Index = () => {
                   onAnalyze={handleAnalyze}
                   onClear={() => {
                     setResults([]);
+                    setSelectedPin(null);
                     setHasAnalyzed(false);
                   }}
                   isAnalyzing={isAnalyzing}
@@ -189,16 +201,57 @@ const Index = () => {
                     </div>
                   </div>
 
-                  {/* Results Cards Grid */}
+                  {/* PIN Selector for Multi-results */}
+                  {validResults.length > 1 && (
+                    <div className="bg-card border border-border rounded-xl p-3 card-shadow">
+                      <p className="text-[10px] font-semibold font-sans text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                        Select a PIN to view details
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {validResults.map((r) => (
+                          <button
+                            key={r.pin}
+                            onClick={() => setSelectedPin(r.pin)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-mono border transition-all",
+                              selectedPin === r.pin
+                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                : "bg-secondary/50 text-muted-foreground border-border hover:bg-secondary hover:text-foreground"
+                            )}
+                          >
+                            {r.pin}
+                          </button>
+                        ))}
+                        {notFoundResults.length > 0 && notFoundResults.map((r) => (
+                          <button
+                            key={r.pin}
+                            onClick={() => setSelectedPin(r.pin)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-mono border transition-all opacity-70",
+                              selectedPin === r.pin
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : "bg-destructive/5 text-destructive/60 border-destructive/10 hover:bg-destructive/10 hover:text-destructive"
+                            )}
+                          >
+                            {r.pin} (X)
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Single Detailed View */}
                   <div className="grid grid-cols-1 gap-4">
-                    {results.map((r) => (
-                      <ResultsCard
-                        key={r.pin}
-                        result={r}
-                        analyzeCurrentTaxes={analyzeCurrentTaxes}
-                        incomeApproach={incomeApproach}
-                      />
-                    ))}
+                    {results
+                      .filter((r) => r.pin === selectedPin)
+                      .map((r) => (
+                        <ResultsCard
+                          key={r.pin}
+                          result={r}
+                          analyzeCurrentTaxes={analyzeCurrentTaxes}
+                          incomeApproach={incomeApproach}
+                        />
+                      ))}
                   </div>
                 </div>
 
